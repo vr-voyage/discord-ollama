@@ -5,6 +5,51 @@ import { Queue } from '../queues/queue.js'
 import { AbortableAsyncIterator } from 'ollama/src/utils.js'
 
 /**
+ * Splits a message into Discord-sized chunks at line breaks,
+ * ensuring code blocks are properly terminated and restarted.
+ */
+function splitMessageWithCodeBlocks(text: string, maxLen: number = 1900): string[] {
+    const lines = text.split('\n');
+    const chunks: string[] = [];
+    let buffer = '';
+    let inCodeBlock = false;
+    let codeLang = '';
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+
+        // Detect code block start
+        if (!inCodeBlock && line.startsWith('```')) {
+            inCodeBlock = true;
+            codeLang = line.slice(3).trim();
+        }
+
+        // Detect code block end
+        if (inCodeBlock && line.trim() === '```') {
+            inCodeBlock = false;
+            codeLang = '';
+        }
+
+        // If adding this line would exceed maxLen, flush buffer
+        if ((buffer + line + '\n').length > maxLen) {
+            if (inCodeBlock) buffer += '\n```';
+            chunks.push(buffer);
+            buffer = inCodeBlock ? '```' + codeLang + '\n' : '';
+        }
+
+        buffer += line + '\n';
+    }
+
+    // Flush remaining buffer
+    if (buffer.trim().length > 0) {
+        if (inCodeBlock) buffer += '\n```';
+        chunks.push(buffer);
+    }
+
+    return chunks.map(chunk => chunk.trimEnd());
+}
+
+/**
  * Method to send replies as normal text on discord like any other user
  * @param message message sent by the user
  * @param model name of model to run query
@@ -56,21 +101,16 @@ export async function normalMessage(
                 response = await blockResponse(params)
                 result = response.message.content
 
-                // check if message length > discord max for normal messages
-                if (result.length > 2000) {
-                    sentMessage.edit(result.slice(0, 2000))
-                    result = result.slice(2000)
+                // Split message at line breaks, handling code blocks
+                const chunks = splitMessageWithCodeBlocks(result, 1900);
 
-                    // handle for rest of message that is >2000
-                    while (result.length > 2000) {
-                        channel.send(result.slice(0, 2000))
-                        result = result.slice(2000)
-                    }
+                // Edit first message
+                sentMessage.edit(chunks[0]);
 
-                    // last part of message
-                    channel.send(result)
-                } else // edit the 'generic' response to new message since <2000
-                    sentMessage.edit(result)
+                // Send remaining chunks
+                for (let j = 1; j < chunks.length; j++) {
+                    await channel.send(chunks[j]);
+                }
             }
         } catch (error: any) {
             console.log(`[Util: messageNormal] Error creating message: ${error.message}`)
