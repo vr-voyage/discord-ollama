@@ -6,6 +6,10 @@ import commands from '../commands/index.js'
  * @param interaction the interaction received from the server
  */
 export default event(Events.InteractionCreate, async ({ log, client }, interaction) => {
+    if (interaction.isModalSubmit()) {
+        log(`Modal called \'${interaction.customId}\' from ${interaction.user.tag}.`)
+        return interaction.reply({ content: `Received your input! \`\`\`json\n${interaction.toJSON()}\n\`\`\``, ephemeral: true }); 
+    }
     if (!interaction.isCommand() || !interaction.isChatInputCommand()) return
 
     log(`Interaction called \'${interaction.commandName}\' from ${interaction.user.tag}.`)

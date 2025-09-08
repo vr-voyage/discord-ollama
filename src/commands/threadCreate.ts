@@ -1,4 +1,4 @@
-import { ChannelType, Client, CommandInteraction, MessageFlags, TextChannel, ThreadChannel } from 'discord.js'
+import { ApplicationCommandOptionType, ChannelType, Client, ChatInputCommandInteraction, MessageFlags, TextChannel, ThreadChannel } from 'discord.js'
 import { AdminCommand, openChannelInfo, SlashCommand } from '../utils/index.js'
 
 export const ThreadCreate: SlashCommand = {
@@ -15,7 +15,7 @@ export const ThreadCreate: SlashCommand = {
     ],
 
     // Query for server information
-    run: async (client: Client, interaction: CommandInteraction) => {
+    run: async (client: Client, interaction: ChatInputCommandInteraction) => {
         // fetch the channel
         const channel = await client.channels.fetch(interaction.channelId)
         if (!channel || !AdminCommand.includes(channel.type)) return
@@ -38,6 +38,6 @@ export const ThreadCreate: SlashCommand = {
         return interaction.reply({
             content: `I can help you in <#${thread.id}> below.`,
             flags: MessageFlags.Ephemeral
-        })
+        });
     }
 }

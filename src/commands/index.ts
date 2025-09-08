@@ -9,8 +9,10 @@ import { ClearUserChannelHistory } from './cleanUserChannelHistory.js'
 import { PullModel } from './pullModel.js'
 import { SwitchModel } from './switchModel.js'
 import { DeleteModel } from './deleteModel.js'
+import { Prompt } from './prompt.js'
 
 export default [
+    Prompt,
     ThreadCreate,
     PrivateThreadCreate,
     MessageStream,
